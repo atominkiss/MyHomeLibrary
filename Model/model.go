@@ -1,4 +1,4 @@
-package Model // nolint:golint
+package model // nolint:golint
 
 import "labix.org/v2/mgo/bson"
 

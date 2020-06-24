@@ -1,7 +1,7 @@
 package main
 
 import (
-	"MyHomeLibrary/Model"
+	. "MyHomeLibrary/Model"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"log"
@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-var books []Model.Book
+var books []Book
 
 func main() {
 	r := mux.NewRouter()
