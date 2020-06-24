@@ -64,6 +64,7 @@ func createBook(w http.ResponseWriter, r *http.Request) {
 	var book Book
 	if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
 	}
 	book.ID = bson.NewObjectId()
 	if err := booksDao.Insert(book); err != nil {
@@ -76,7 +77,7 @@ func createBook(w http.ResponseWriter, r *http.Request) {
 // PUT update an existing book.
 func updateBook(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var book Book
+	var book Book // nolint:wsl
 	if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return

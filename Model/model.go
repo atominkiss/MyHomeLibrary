@@ -3,7 +3,7 @@ package model // nolint:golint
 import "labix.org/v2/mgo/bson"
 
 type Book struct {
-	ID     bson.ObjectId `bson:"id"          json:"id"`
+	ID     bson.ObjectId `bson:"_id"          json:"id"`
 	Title  string        `bson:"title"       json:"title"`
 	Author *Author       `bson:"author"      json:"author"`
 }
