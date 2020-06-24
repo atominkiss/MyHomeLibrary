@@ -1,6 +1,7 @@
 package main
 
 import (
+	"MyHomeLibrary/Model"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"log"
@@ -9,37 +10,26 @@ import (
 	"strconv"
 )
 
-type Book struct {
-	ID     string  `json:"id"`
-	Title  string  `json:"title"`
-	Author *Author `json:"author"`
-}
-
-type Author struct {
-	Firstname string `json:"firstname"`
-	Lastname  string `json:"lastname"`
-}
-
-var books []Book
+var books []Model.Book
 
 func main() {
 	r := mux.NewRouter()
-	books = append(books, Book{
-		ID:    "1",
-		Title: "Война и Мир",
-		Author: &Author{
-			Firstname: "Lev",
-			Lastname:  "Tolstoy",
-		},
-	})
-	books = append(books, Book{
-		ID:    "2",
-		Title: "Crime and Punishment",
-		Author: &Author{
-			Firstname: "Fedor",
-			Lastname:  "Dostoevsky",
-		},
-	})
+	// books = append(books, Book{
+	// 	ID:    "1",
+	// 	Title: "Война и Мир",
+	// 	Author: &Author{
+	// 		Firstname: "Lev",
+	// 		Lastname:  "Tolstoy",
+	// 	},
+	// })
+	// books = append(books, Book{
+	// 	ID:    "2",
+	// 	Title: "Crime and Punishment",
+	// 	Author: &Author{
+	// 		Firstname: "Fedor",
+	// 		Lastname:  "Dostoevsky",
+	// 	},
+	// })
 	r.HandleFunc("/books", getBooks).Methods("GET")
 	r.HandleFunc("/books/{id}", getBook).Methods("GET")
 	r.HandleFunc("/books", createBook).Methods("POST")
