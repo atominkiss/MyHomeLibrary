@@ -1,94 +1,114 @@
 package main
 
 import (
+	. "MyHomeLibrary/Config"
+	. "MyHomeLibrary/DAO"
 	. "MyHomeLibrary/Model"
-	"encoding/json"
+
 	"github.com/gorilla/mux"
+	"labix.org/v2/mgo/bson"
+
+	"encoding/json"
 	"log"
-	"math/rand"
 	"net/http"
-	"strconv"
 )
 
-var books []Book
+var config = Config{}
+var booksDao = BooksDAO{}
+
+func init() {
+	config.Read()
+
+	booksDao.Server = config.Server
+	booksDao.Database = config.Database
+	booksDao.Connect()
+}
 
 func main() {
 	r := mux.NewRouter()
-	// books = append(books, Book{
-	// 	ID:    "1",
-	// 	Title: "Война и Мир",
-	// 	Author: &Author{
-	// 		Firstname: "Lev",
-	// 		Lastname:  "Tolstoy",
-	// 	},
-	// })
-	// books = append(books, Book{
-	// 	ID:    "2",
-	// 	Title: "Crime and Punishment",
-	// 	Author: &Author{
-	// 		Firstname: "Fedor",
-	// 		Lastname:  "Dostoevsky",
-	// 	},
-	// })
 	r.HandleFunc("/books", getBooks).Methods("GET")
 	r.HandleFunc("/books/{id}", getBook).Methods("GET")
 	r.HandleFunc("/books", createBook).Methods("POST")
 	r.HandleFunc("/books/{id}", updateBook).Methods("PUT")
 	r.HandleFunc("/books/{id}", deleteBook).Methods("DELETE")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	if err := http.ListenAndServe(":8080", r); err != nil {
+		log.Fatal(err)
+	}
 }
 
+// GET list of books
 func getBooks(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(books)
+	books, err := booksDao.FindAll()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	respondWithJson(w, http.StatusOK, books)
 }
 
+// GET a book by its ID
 func getBook(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
-	for _, item := range books {
-		if item.ID == params["id"] {
-			json.NewEncoder(w).Encode(item)
-			return
-		}
+	book, err := booksDao.FindById(params["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid Book Id")
+		return
 	}
+	respondWithJson(w, http.StatusOK, book)
+
 }
 
+// POST a new book
 func createBook(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	defer r.Body.Close()
 	var book Book
-	_ = json.NewDecoder(r.Body).Decode(&book)
-	book.ID = strconv.Itoa(rand.Intn(1000000))
-	books = append(books, book)
-	json.NewEncoder(w).Encode(book)
+	if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+	}
+	book.ID = bson.NewObjectId()
+	if err := booksDao.Insert(book); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	respondWithJson(w, http.StatusCreated, book)
 }
 
+// PUT update an existing book
 func updateBook(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(r)
-	for index, item := range books {
-		if item.ID == params["id"] {
-			books = append(books[:index], books[index+1:]...)
-			var book Book
-			_ = json.NewDecoder(r.Body).Decode(&book)
-			book.ID = params["id"]
-			books = append(books, book)
-			json.NewEncoder(w).Encode(book)
-			return
-		}
-
+	defer r.Body.Close()
+	var book Book
+	if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
 	}
-	json.NewEncoder(w).Encode(books)
+	if err := booksDao.Update(book); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	respondWithJson(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
 func deleteBook(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(r)
-	for index, item := range books {
-		if item.ID == params["id"] {
-			books = append(books[:index], books[index+1:]...)
-			break
-		}
+	defer r.Body.Close()
+	var book Book
+	if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
 	}
-	json.NewEncoder(w).Encode(books)
+	if err := booksDao.Delete(book); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	respondWithJson(w, http.StatusOK, map[string]string{"result": "success"})
+}
+
+func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
+	response, _ := json.Marshal(payload)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(response)
+}
+
+func respondWithError(w http.ResponseWriter, code int, msg string) {
+	respondWithJson(w, code, map[string]string{"error": msg})
 }
