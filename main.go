@@ -31,22 +31,22 @@ func main() {
 	r.HandleFunc("/books", createBook).Methods("POST")
 	r.HandleFunc("/books/{id}", updateBook).Methods("PUT")
 	r.HandleFunc("/books/{id}", deleteBook).Methods("DELETE")
-	if err := http.ListenAndServe(":8080", r); err != nil {
+	if err := http.ListenAndServe(":8080", r); err != nil { // nolint:wsl
 		log.Fatal(err)
 	}
 }
 
-// GET list of books
-func getBooks(w http.ResponseWriter, r *http.Request) {
+// GET list of books.
+func getBooks(w http.ResponseWriter, _ *http.Request) {
 	books, err := booksDao.FindAll()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondWithJson(w, http.StatusOK, books)
+	respondWithJSON(w, http.StatusOK, books)
 }
 
-// GET a book by its ID
+// GET a book by its ID.
 func getBook(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	book, err := booksDao.FindById(params["id"])
@@ -54,11 +54,11 @@ func getBook(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusBadRequest, "Invalid Book Id")
 		return
 	}
-	respondWithJson(w, http.StatusOK, book)
+	respondWithJSON(w, http.StatusOK, book)
 
 }
 
-// POST a new book
+// POST a new book.
 func createBook(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var book Book
@@ -70,10 +70,10 @@ func createBook(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondWithJson(w, http.StatusCreated, book)
+	respondWithJSON(w, http.StatusCreated, book)
 }
 
-// PUT update an existing book
+// PUT update an existing book.
 func updateBook(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var book Book
@@ -85,7 +85,7 @@ func updateBook(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondWithJson(w, http.StatusOK, map[string]string{"result": "success"})
+	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
 func deleteBook(w http.ResponseWriter, r *http.Request) {
@@ -99,10 +99,10 @@ func deleteBook(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondWithJson(w, http.StatusOK, map[string]string{"result": "success"})
+	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
-func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	response, _ := json.Marshal(payload)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
@@ -110,5 +110,5 @@ func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
 }
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
-	respondWithJson(w, code, map[string]string{"error": msg})
+	respondWithJSON(w, code, map[string]string{"error": msg})
 }
